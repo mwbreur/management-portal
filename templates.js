@@ -1,3 +1,4 @@
+// Central repository for the application view templates
 const PORTAL_VIEWS = {
   dashboard: `
     <div class="space-y-6">
