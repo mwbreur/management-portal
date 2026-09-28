@@ -1,7 +1,3 @@
-/**
- * Modern Management Portal - Optimized Core Core Router & State Manager
- * Architecture: Optimized DOM Cache, Global Event Delegation, Passive Listeners
- */
 const AppRouter = {
   // 1. Data Store State Model
   userDataStore: [
@@ -10,7 +6,7 @@ const AppRouter = {
     { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", status: "Inactive" }
   ],
 
-  // 2. Centralized DOM Cache (Eliminates Redundant Lookups)
+  // 2. Centralized DOM Cache
   dom: {
     sidebar: null,
     header: null,
@@ -18,48 +14,32 @@ const AppRouter = {
     navItems: null
   },
 
-  /**
-   * Initializes the application shell, builds components,
-   * caches DOM nodes, and sets up permanent global event delegation.
-   */
   init: function() {
-    // Render static interface components into the shell
     if (typeof SidebarComponent !== 'undefined') SidebarComponent.render('sidebar-container');
     if (typeof HeaderComponent !== 'undefined') HeaderComponent.render('header-container');
 
-    // Cache core permanent layout references
     this.dom.sidebar = document.getElementById('sidebar-container');
     this.dom.header = document.getElementById('header-container');
     this.dom.mainContent = document.getElementById('main-content');
     
-    // Cache nav nodes immediately after sidebar rendering completes
     if (this.dom.sidebar) {
       this.dom.navItems = this.dom.sidebar.querySelectorAll('.nav-item');
     }
 
-    // Bind structural event handlers
     this.bindGlobalListeners();
-
-    // Trigger initial route view paint
     this.navigateTo('dashboard');
   },
 
-  /**
-   * Implements Event Delegation. Listeners are bound ONCE to permanent parent containers.
-   * This completely fixes memory leaks and listener accumulation during section navigation.
-   */
   bindGlobalListeners: function() {
-    // A. Sidebar Section Switch Routing Delegation
+    // A. Sidebar Navigation Switching Delegation
     if (this.dom.sidebar) {
       this.dom.sidebar.addEventListener('click', (event) => {
         const button = event.target.closest('[data-section]');
-        if (button) {
-          this.navigateTo(button.getAttribute('data-section'));
-        }
+        if (button) this.navigateTo(button.getAttribute('data-section'));
       });
     }
 
-    // B. Main Content Dynamic Action Delegation (Handles forms, table buttons natively)
+    // B. Main Content Dynamic Action Delegation (Handles all existing + new form clicks)
     if (this.dom.mainContent) {
       this.dom.mainContent.addEventListener('click', (event) => {
         const target = event.target;
@@ -74,43 +54,97 @@ const AppRouter = {
         const editBtn = target.closest('[data-edit-id]');
         if (editBtn) {
           const userId = editBtn.getAttribute('data-edit-id');
-          if (typeof Toast !== 'undefined') {
-            Toast.show(`Opened edit console panel context layout for user ID: ${userId}`, "info");
-          }
+          if (typeof Toast !== 'undefined') Toast.show(`Modifying context parameters for ID: ${userId}`, "info");
+          return;
+        }
+
+        // --- NEW SLIDING PANEL MANAGEMENT DELEGATION DEVTROLS ---
+        if (target.id === 'openCreateUserBtn') {
+          this.toggleSlidingPanel(true);
+          return;
+        }
+        if (target.id === 'closeCreateUserBtn' || target.id === 'cancelCreateUserBtn' || target.id === 'panelBackdrop') {
+          this.toggleSlidingPanel(false);
+          return;
+        }
+        if (target.id === 'submitCreateUserBtn') {
+          this.handleCreateUserSubmit();
+          return;
         }
       });
     }
   },
 
   /**
-   * Coordinates view switching workflows safely and efficiently.
+   * Smoothly animates sliding panel DOM blocks by shifting translation CSS matrices
    */
+  toggleSlidingPanel: function(shouldOpen) {
+    const panel = document.getElementById('createUserPanel');
+    const backdrop = document.getElementById('panelBackdrop');
+    if (!panel || !backdrop) return;
+
+    if (shouldOpen) {
+      panel.classList.remove('translate-x-full');
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    } else {
+      panel.classList.add('translate-x-full');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+  },
+
+  /**
+   * Processes create user inputs, runs validations, pushes records to memory storage arrays,
+   * and redraws target components smoothly.
+   */
+  handleCreateUserSubmit: function() {
+    const nameInput = document.getElementById('newUserName');
+    const emailInput = document.getElementById('newUserEmail');
+    const statusInput = document.getElementById('newUserStatus');
+
+    const name = nameInput?.value.trim() || '';
+    const email = emailInput?.value.trim() || '';
+    const status = statusInput?.value || 'Active';
+
+    // Simple robust form structure evaluations
+    if (!name || !email) {
+      if (typeof Toast !== 'undefined') Toast.show("Please populate all text criteria fields!", "error");
+      return;
+    }
+
+    // Generate calculated sequential operational keys 
+    const nextId = this.userDataStore.length > 0 ? Math.max(...this.userDataStore.map(u => u.id)) + 1 : 1;
+
+    // Append new model profile state token item straight to local dynamic storage scope array
+    this.userDataStore.push({ id: nextId, name: name, email: email, status: status });
+
+    // Instantly close sliding container frame interface
+    this.toggleSlidingPanel(false);
+
+    // Refresh structural boundary context template layers on screen instantly 
+    this.dom.mainContent.innerHTML = PORTAL_VIEWS.renderUsersTable(this.userDataStore);
+
+    if (typeof Toast !== 'undefined') {
+      Toast.show(`Successfully appended configuration account record for ${name}!`, "success");
+    }
+  },
+
   navigateTo: function(sectionId) {
     if (!this.dom.mainContent || typeof PORTAL_VIEWS === 'undefined') return;
 
-    // Direct innerHTML assignment used strictly on structural root node boundary swaps
     if (sectionId === 'users') {
       this.dom.mainContent.innerHTML = PORTAL_VIEWS.renderUsersTable(this.userDataStore);
     } else if (PORTAL_VIEWS[sectionId]) {
       this.dom.mainContent.innerHTML = PORTAL_VIEWS[sectionId];
     }
 
-    // Run layout modifications
     this.updateActiveNav(sectionId);
     this.hydrateViewFields(sectionId);
   },
 
-  /**
-   * Refined Class Updates. Uses cached nodes and conditional checks
-   * to eliminate DOM layout thrashing and unnecessary repaints.
-   */
   updateActiveNav: function(sectionId) {
     if (!this.dom.navItems) return;
-
     this.dom.navItems.forEach(item => {
       const isTarget = item.getAttribute('data-section') === sectionId;
-      
-      // Batch layout style states cleanly using stateful class tokens
       item.classList.toggle('bg-blue-600', isTarget);
       item.classList.toggle('text-white', isTarget);
       item.classList.toggle('text-slate-300', !isTarget);
@@ -118,10 +152,6 @@ const AppRouter = {
     });
   },
 
-  /**
-   * Safe data field loading configuration.
-   * Hydrates state parameters without creating volatile listener cycles.
-   */
   hydrateViewFields: function(sectionId) {
     if (sectionId === 'settings') {
       const appNameInput = document.getElementById('appName');
@@ -136,10 +166,6 @@ const AppRouter = {
     }
   },
 
-  /**
-   * Processes form structures. Keeps storage interactions grouped inside 
-   * a single synchronous transactional boundary execution scope block.
-   */
   handleSaveSettings: function() {
     const appName = document.getElementById('appName')?.value || '';
     const theme = document.getElementById('theme')?.value || '';
@@ -157,7 +183,4 @@ const AppRouter = {
   }
 };
 
-// Launch the application cleanly once the DOM structure initializes
-document.addEventListener('DOMContentLoaded', () => {
-  AppRouter.init();
-});
+document.addEventListener('DOMContentLoaded', () => AppRouter.init());
