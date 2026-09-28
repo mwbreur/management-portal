@@ -1,3 +1,6 @@
+/**
+ * Modern Management Portal - Core Router & State Manager
+ */
 const AppRouter = {
   // 1. Data Store State Model
   userDataStore: [
@@ -31,7 +34,6 @@ const AppRouter = {
   },
 
   bindGlobalListeners: function() {
-    // A. Sidebar Navigation Switching Delegation
     if (this.dom.sidebar) {
       this.dom.sidebar.addEventListener('click', (event) => {
         const button = event.target.closest('[data-section]');
@@ -39,18 +41,15 @@ const AppRouter = {
       });
     }
 
-    // B. Main Content Dynamic Action Delegation (Handles all existing + new form clicks)
     if (this.dom.mainContent) {
       this.dom.mainContent.addEventListener('click', (event) => {
         const target = event.target;
 
-        // Catch Settings Save Trigger
         if (target.id === 'saveSettingsBtn') {
           this.handleSaveSettings();
           return;
         }
 
-        // Catch User Modify Operation Trigger
         const editBtn = target.closest('[data-edit-id]');
         if (editBtn) {
           const userId = editBtn.getAttribute('data-edit-id');
@@ -58,7 +57,6 @@ const AppRouter = {
           return;
         }
 
-        // --- NEW SLIDING PANEL MANAGEMENT DELEGATION DEVTROLS ---
         if (target.id === 'openCreateUserBtn') {
           this.toggleSlidingPanel(true);
           return;
@@ -75,9 +73,6 @@ const AppRouter = {
     }
   },
 
-  /**
-   * Smoothly animates sliding panel DOM blocks by shifting translation CSS matrices
-   */
   toggleSlidingPanel: function(shouldOpen) {
     const panel = document.getElementById('createUserPanel');
     const backdrop = document.getElementById('panelBackdrop');
@@ -92,10 +87,6 @@ const AppRouter = {
     }
   },
 
-  /**
-   * Processes create user inputs, runs validations, pushes records to memory storage arrays,
-   * and redraws target components smoothly.
-   */
   handleCreateUserSubmit: function() {
     const nameInput = document.getElementById('newUserName');
     const emailInput = document.getElementById('newUserEmail');
@@ -105,22 +96,15 @@ const AppRouter = {
     const email = emailInput?.value.trim() || '';
     const status = statusInput?.value || 'Active';
 
-    // Simple robust form structure evaluations
     if (!name || !email) {
       if (typeof Toast !== 'undefined') Toast.show("Please populate all text criteria fields!", "error");
       return;
     }
 
-    // Generate calculated sequential operational keys 
     const nextId = this.userDataStore.length > 0 ? Math.max(...this.userDataStore.map(u => u.id)) + 1 : 1;
-
-    // Append new model profile state token item straight to local dynamic storage scope array
     this.userDataStore.push({ id: nextId, name: name, email: email, status: status });
 
-    // Instantly close sliding container frame interface
     this.toggleSlidingPanel(false);
-
-    // Refresh structural boundary context template layers on screen instantly 
     this.dom.mainContent.innerHTML = PORTAL_VIEWS.renderUsersTable(this.userDataStore);
 
     if (typeof Toast !== 'undefined') {
