@@ -1,186 +1,77 @@
-const AppRouter = {
-  // 1. Data Store State Model
-  userDataStore: [
-    { id: 1, name: "John Doe", email: "john.doe@example.com", status: "Active" },
-    { id: 2, name: "Jane Smith", email: "jane.smith@example.com", status: "Active" },
-    { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", status: "Inactive" }
-  ],
-
-  // 2. Centralized DOM Cache
-  dom: {
-    sidebar: null,
-    header: null,
-    mainContent: null,
-    navItems: null
-  },
-
-  init: function() {
-    if (typeof SidebarComponent !== 'undefined') SidebarComponent.render('sidebar-container');
-    if (typeof HeaderComponent !== 'undefined') HeaderComponent.render('header-container');
-
-    this.dom.sidebar = document.getElementById('sidebar-container');
-    this.dom.header = document.getElementById('header-container');
-    this.dom.mainContent = document.getElementById('main-content');
-    
-    if (this.dom.sidebar) {
-      this.dom.navItems = this.dom.sidebar.querySelectorAll('.nav-item');
-    }
-
-    this.bindGlobalListeners();
-    this.navigateTo('dashboard');
-  },
-
-  bindGlobalListeners: function() {
-    // A. Sidebar Navigation Switching Delegation
-    if (this.dom.sidebar) {
-      this.dom.sidebar.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-section]');
-        if (button) this.navigateTo(button.getAttribute('data-section'));
-      });
-    }
-
-    // B. Main Content Dynamic Action Delegation (Handles all existing + new form clicks)
-    if (this.dom.mainContent) {
-      this.dom.mainContent.addEventListener('click', (event) => {
-        const target = event.target;
-
-        // Catch Settings Save Trigger
-        if (target.id === 'saveSettingsBtn') {
-          this.handleSaveSettings();
-          return;
-        }
-
-        // Catch User Modify Operation Trigger
-        const editBtn = target.closest('[data-edit-id]');
-        if (editBtn) {
-          const userId = editBtn.getAttribute('data-edit-id');
-          if (typeof Toast !== 'undefined') Toast.show(`Modifying context parameters for ID: ${userId}`, "info");
-          return;
-        }
-
-        // --- NEW SLIDING PANEL MANAGEMENT DELEGATION DEVTROLS ---
-        if (target.id === 'openCreateUserBtn') {
-          this.toggleSlidingPanel(true);
-          return;
-        }
-        if (target.id === 'closeCreateUserBtn' || target.id === 'cancelCreateUserBtn' || target.id === 'panelBackdrop') {
-          this.toggleSlidingPanel(false);
-          return;
-        }
-        if (target.id === 'submitCreateUserBtn') {
-          this.handleCreateUserSubmit();
-          return;
-        }
-      });
-    }
-  },
-
-  /**
-   * Smoothly animates sliding panel DOM blocks by shifting translation CSS matrices
-   */
-  toggleSlidingPanel: function(shouldOpen) {
-    const panel = document.getElementById('createUserPanel');
-    const backdrop = document.getElementById('panelBackdrop');
-    if (!panel || !backdrop) return;
-
-    if (shouldOpen) {
-      panel.classList.remove('translate-x-full');
-      backdrop.classList.remove('opacity-0', 'pointer-events-none');
-    } else {
-      panel.classList.add('translate-x-full');
-      backdrop.classList.add('opacity-0', 'pointer-events-none');
-    }
-  },
-
-  /**
-   * Processes create user inputs, runs validations, pushes records to memory storage arrays,
-   * and redraws target components smoothly.
-   */
-  handleCreateUserSubmit: function() {
-    const nameInput = document.getElementById('newUserName');
-    const emailInput = document.getElementById('newUserEmail');
-    const statusInput = document.getElementById('newUserStatus');
-
-    const name = nameInput?.value.trim() || '';
-    const email = emailInput?.value.trim() || '';
-    const status = statusInput?.value || 'Active';
-
-    // Simple robust form structure evaluations
-    if (!name || !email) {
-      if (typeof Toast !== 'undefined') Toast.show("Please populate all text criteria fields!", "error");
-      return;
-    }
-
-    // Generate calculated sequential operational keys 
-    const nextId = this.userDataStore.length > 0 ? Math.max(...this.userDataStore.map(u => u.id)) + 1 : 1;
-
-    // Append new model profile state token item straight to local dynamic storage scope array
-    this.userDataStore.push({ id: nextId, name: name, email: email, status: status });
-
-    // Instantly close sliding container frame interface
-    this.toggleSlidingPanel(false);
-
-    // Refresh structural boundary context template layers on screen instantly 
-    this.dom.mainContent.innerHTML = PORTAL_VIEWS.renderUsersTable(this.userDataStore);
-
-    if (typeof Toast !== 'undefined') {
-      Toast.show(`Successfully appended configuration account record for ${name}!`, "success");
-    }
-  },
-
-  navigateTo: function(sectionId) {
-    if (!this.dom.mainContent || typeof PORTAL_VIEWS === 'undefined') return;
-
-    if (sectionId === 'users') {
-      this.dom.mainContent.innerHTML = PORTAL_VIEWS.renderUsersTable(this.userDataStore);
-    } else if (PORTAL_VIEWS[sectionId]) {
-      this.dom.mainContent.innerHTML = PORTAL_VIEWS[sectionId];
-    }
-
-    this.updateActiveNav(sectionId);
-    this.hydrateViewFields(sectionId);
-  },
-
-  updateActiveNav: function(sectionId) {
-    if (!this.dom.navItems) return;
-    this.dom.navItems.forEach(item => {
-      const isTarget = item.getAttribute('data-section') === sectionId;
-      item.classList.toggle('bg-blue-600', isTarget);
-      item.classList.toggle('text-white', isTarget);
-      item.classList.toggle('text-slate-300', !isTarget);
-      item.classList.toggle('hover:bg-slate-800', !isTarget);
+  renderUsersTable: function(usersArray) {
+    let rowsHtml = '';
+    usersArray.forEach(user => {
+      rowsHtml += `
+        <tr class="border-b border-slate-100 hover:bg-slate-50/50 transition">
+          <td class="px-6 py-4 text-sm font-bold text-slate-700">#${user.id}</td>
+          <td class="px-6 py-4 text-sm font-medium text-slate-800">${user.name}</td>
+          <td class="px-6 py-4 text-sm text-slate-500">${user.email}</td>
+          <td class="px-6 py-4 text-sm">
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${user.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}">
+              ${user.status}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm">
+            <button data-edit-id="${user.id}" class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer text-xs">Modify Record</button>
+          </td>
+        </tr>
+      `;
     });
-  },
 
-  hydrateViewFields: function(sectionId) {
-    if (sectionId === 'settings') {
-      const appNameInput = document.getElementById('appName');
-      const themeInput = document.getElementById('theme');
-      const notifInput = document.getElementById('notifications');
-      const backupInput = document.getElementById('backupInterval');
+    return `
+      <div class="space-y-4 relative overflow-hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-slate-800">User Directory Records</h2>
+          <button id="openCreateUserBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded-lg shadow transition cursor-pointer flex items-center gap-2">
+            <span>➕</span> Add User
+          </button>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow border border-slate-100 overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-100 text-slate-400 font-semibold text-xs tracking-wider uppercase">
+                <th class="px-6 py-3">UID</th><th class="px-6 py-3">Full Identity</th><th class="px-6 py-3">Email Access</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Operations</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
 
-      if (appNameInput) appNameInput.value = localStorage.getItem('portal_appName') || 'My Application';
-      if (themeInput) themeInput.value = localStorage.getItem('portal_theme') || 'dark';
-      if (notifInput) notifInput.checked = localStorage.getItem('portal_notifications') === 'true';
-      if (backupInput) backupInput.value = localStorage.getItem('portal_backupInterval') || '24';
-    }
-  },
+        <!-- Sliding Panel Backdrop Overlay -->
+        <div id="panelBackdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
 
-  handleSaveSettings: function() {
-    const appName = document.getElementById('appName')?.value || '';
-    const theme = document.getElementById('theme')?.value || '';
-    const notifications = document.getElementById('notifications')?.checked || false;
-    const backupInterval = document.getElementById('backupInterval')?.value || '';
+        <!-- Dynamic Slide-Over Panel Container -->
+        <div id="createUserPanel" class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+          <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <h3 class="text-lg font-bold text-slate-800">Create New User Profile</h3>
+            <button id="closeCreateUserBtn" class="text-slate-400 hover:text-slate-600 text-2xl font-semibold cursor-pointer p-1">&times;</button>
+          </div>
+          
+          <div class="flex-1 p-6 space-y-4 overflow-y-auto">
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1">Full Identity Name</label>
+              <input type="text" id="newUserName" class="w-full border border-slate-200 p-2.5 rounded-lg text-slate-800 focus:outline-blue-500 bg-slate-50" placeholder="e.g. Alex Morgan">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1">Email Access Address</label>
+              <input type="email" id="newUserEmail" class="w-full border border-slate-200 p-2.5 rounded-lg text-slate-800 focus:outline-blue-500 bg-slate-50" placeholder="e.g. alex@example.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-600 mb-1">Initial Status Account State</label>
+              <select id="newUserStatus" class="w-full border border-slate-200 p-2.5 rounded-lg text-slate-800 focus:outline-blue-500 bg-slate-50">
+                <option value="Active">Active Operational</option>
+                <option value="Inactive">Inactive Suspended</option>
+              </select>
+            </div>
+          </div>
 
-    localStorage.setItem('portal_appName', appName);
-    localStorage.setItem('portal_theme', theme);
-    localStorage.setItem('portal_notifications', notifications);
-    localStorage.setItem('portal_backupInterval', backupInterval);
-
-    if (typeof Toast !== 'undefined') {
-      Toast.show("Configuration parameters saved securely to localStorage!", "success");
-    }
+          <div class="p-6 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+            <button id="cancelCreateUserBtn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition cursor-pointer">Cancel</button>
+            <button id="submitCreateUserBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-5 py-2 rounded-lg shadow transition cursor-pointer">Save Account Record</button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 };
-
-document.addEventListener('DOMContentLoaded', () => AppRouter.init());
