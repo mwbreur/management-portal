@@ -1,11 +1,11 @@
-// Central repository for the application view templates
+// Central repository for the application view templates containing the dashboard, settings, user table with a sliding create-user panel, analytics, and reports views.
 const PORTAL_VIEWS = {
-  dashboard: `...`, // Dashboard view template containing active subscriptions, monthly revenue, and server status
-  settings: `...`, // Settings configuration form view template
+  dashboard: `...`, // Dashboard metrics and insights view
+  settings: `...`,  // Portal configuration settings form
   renderUsersTable: function(usersArray) {
-    // Renders the user directory records table and slide-over panel
-    // You can find the full code implementation in the referenced project files.
+    // Generates the user directory table and the slide-over panel for adding new users
+    return `...`;
   },
-  analytics: `...`, // System metrics and analytics view template
-  reports: `...`  // Export management and reports view template
+  analytics: `...`, // System performance metrics and charts
+  reports: `...`    // Export management records and report generation
 };
